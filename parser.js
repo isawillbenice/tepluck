@@ -7,9 +7,9 @@ var Q = require('q');
 var products = [];
 var products_promise = [];
 
-var urls = {
-    1: 'http://www.teplo-com.ru/katalog/armatura-oventrop/dlja-otopitelnyh-priborov/termostaty-20667'
-};
+var urls = [
+    'http://www.teplo-com.ru/katalog/armatura-oventrop/dlja-otopitelnyh-priborov/termostaty-20667'
+];
 
 
 var getProducts = function(i, url) {
@@ -24,38 +24,19 @@ var getProducts = function(i, url) {
         function(err, res, page) {
             var $ = cheerio.load(page);
 
-            /*            var count = $('.listitems > .item').length;
-
-             for (var k = 0; k < count; k++) {
-             products.push({
-             'item': {
-             'name': $('span.name > a',$('.listitems > .item')[k]).text(),
-             'img': $('div > a > img',$('.listitems > .item')[k]).attr('src')
-             }
-             });
-             }*/
-
-
             var content = $('table > tbody > tr', $('table > tbody > tr'));
             var tr_count = $('table > tbody > tr', $('table > tbody > tr')).length;
 
-            for (var tr = 0; tr < tr_count; tr++) {
-                var td_count = $('td', content[tr]).length;
+            products[i] = [];
 
-                console.log(td_count);
-
-                for (var td = 0; td < td_count - 1; td++) {
-
-
-                    products.push({
-                        'item': {
-                            'artikul': $('td > b', content[tr]).text(),
-                            'name': $('td > b', content[tr]).text(),
-                            'desc': $('td', content[tr]).text()
-                        }
-                    });
-                }
-
+            for (var tr = 1; tr < tr_count; tr++) {
+                products[i].push({
+                    'item': {
+                        'artikul': $('td', content.eq(tr)).eq(0).text(),
+                        'name': $('td', content.eq(tr)).eq(1).text(),
+                        'desc': $('td', content.eq(tr)).eq(2).text()
+                    }
+                });
             }
 
             defer.resolve();
@@ -66,20 +47,27 @@ var getProducts = function(i, url) {
 };
 
 var parseProducts = function() {
-    for (i in urls) {
+    var urls_count = urls.length;
+
+    for (var i = 0; i < urls_count; i++) {
         products_promise.push(getProducts(i, urls[i]));
     }
 
     Q.all(products_promise).then(function() {
         var full_info = '';
 
-        for (i in urls) {
-            full_info += products[i]['item']['artikul'] + ';' + products[i]['item']['name'] + ';' + products[i]['item']['desc'] + ';\r\n';
+        for (var i = 0; i < urls_count; i++) {
+
+            var products_count = products[i].length;
+
+            for (var pr = 0; pr < products_count; pr++) {
+                full_info += products[i][pr]['item']['artikul'] + ';' + products[i][pr]['item']['name'] + ';' + products[i][pr]['item']['desc'] + ';\r\n';
+            }
         }
 
         fs.writeFile('products.csv', full_info, function(err) {
             if (err) return console.log(err);
-            console.log('products.csv writed');
+            console.log('products.csv is written');
         });
     });
 
